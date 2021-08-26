@@ -1,60 +1,69 @@
 package rsa
 
 import (
-	"fmt"
+	"math/big"
 )
 
 type RSA struct {
-	p       int64
-	q       int64
-	n       int64
-	totient int64
-	e       int64
-	d       int64
+	p *big.Int
+	q *big.Int
+	n *big.Int
+	e *big.Int
+	d *big.Int
 }
 
 type PublicKey struct {
-	e int64
-	n int64
+	e *big.Int
+	n *big.Int
 }
 
 type PrivateKey struct {
-	d int64
-	n int64
+	d *big.Int
+	n *big.Int
 }
 
-func Generate() RSA {
-	var p, q int64
-
-	fmt.Print("Enter a value for p: ")
-	fmt.Scanln(&p)
-
-	fmt.Print("Enter a value for q: ")
-	fmt.Scanln(&q)
-
-	keys := RSA{p: p, q: q, n: p * q}
-	keys.generateTotient()
-	keys.generateE()
-	keys.generateD()
-
-	return keys
-
+func Generate(p, q, n, e, d *big.Int) RSA {
+	return RSA{p: p, q: q, n: n, e: e, d: d}
 }
 
-func (key PublicKey) Encrypt() {
-
+func (key PublicKey) Encrypt(m *big.Int) *big.Int {
+	return m.Exp(m, key.e, key.n)
 }
 
-func (key PrivateKey) Decrypt() {
-
+func (key PublicKey) Verify(s *big.Int) *big.Int {
+	return s.Exp(s, key.e, key.n)
 }
 
-func (key PrivateKey) Sign() {
-
+func (key PrivateKey) Decrypt(c *big.Int) *big.Int {
+	return c.Exp(c, key.d, key.n)
 }
 
-func (key PublicKey) Verify() {
+func (keys RSA) DecryptCRT(c *big.Int) *big.Int {
+	sp := new(big.Int).Exp(c, new(big.Int).Mod(keys.d, new(big.Int).Sub(keys.p, big.NewInt(1))), keys.p)
+	sq := new(big.Int).Exp(c, new(big.Int).Mod(keys.d, new(big.Int).Sub(keys.q, big.NewInt(1))), keys.q)
+	qModInverse := new(big.Int).ModInverse(keys.q, keys.p)
+	qModInverseModP := new(big.Int).Mod(qModInverse, keys.p)
+	result := new(big.Int).Sub(sp, sq)
+	result.Mul(result, qModInverseModP)
+	result.Mul(result, keys.q)
+	result.Add(sq, result)
+	return result
+}
 
+func (key PrivateKey) Sign(m *big.Int) *big.Int {
+	return m.Exp(m, key.d, key.n)
+}
+
+func (keys RSA) SignCRT(m *big.Int) *big.Int {
+	sp := new(big.Int).Exp(m, new(big.Int).Mod(keys.d, new(big.Int).Sub(keys.p, big.NewInt(1))), keys.p)
+	sq := new(big.Int).Exp(m, new(big.Int).Mod(keys.d, new(big.Int).Sub(keys.q, big.NewInt(1))), keys.q)
+	qModInverse := new(big.Int).ModInverse(keys.q, keys.p)
+	qModInverseModP := new(big.Int).Mod(qModInverse, keys.p)
+	result := new(big.Int).Sub(sp, sq)
+	result.Mul(result, qModInverseModP)
+	result.Mul(result, keys.q)
+	result.Add(sq, result)
+	return result
 }
 
 func (keys RSA) GetPublicKey() PublicKey {
@@ -63,52 +72,4 @@ func (keys RSA) GetPublicKey() PublicKey {
 
 func (keys RSA) GetPrivateKey() PrivateKey {
 	return PrivateKey{d: keys.d, n: keys.n}
-}
-
-func (keys *RSA) generateTotient() {
-	keys.totient = (keys.p-1) * (keys.q-1)
-}
-
-func (keys *RSA) generateE() {
-	options := primeGenerator(keys.totient)
-	var e int64
-	fmt.Printf("%v\n", options)
-	fmt.Print("Please select one of the above values: ")
-	fmt.Scanln(&e)
-	keys.e = e
-}
-
-func (keys *RSA) generateD() {
-	var options []int64
-	var i int64
-	for i = 0;
-}
-
-// GCD function modified for int64 from
-// https://play.golang.org/p/SmzvkDjYlb
-func gcd(a, b int64) int64 {
-	for b != 0 {
-		t := b
-		b = a % b
-		a = t
-	}
-	return a
-}
-
-// LCM function modified for int64 from
-// https://play.golang.org/p/SmzvkDjYlb
-func lcm(a, b int64) int64 {
-	result := a * b / gcd(a, b)
-	return result
-}
-
-func primeGenerator(a int64) []int64 {
-	var i int64
-	var result []int64
-	for i = 0; i < a; i++ {
-		if gcd(a, i) == 1 {
-			result = append(result, i)
-		}
-	}
-	return result
 }
