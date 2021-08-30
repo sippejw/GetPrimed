@@ -1,3 +1,3 @@
-module RSA-CRT-Fault
+module GetPrimed
 
 go 1.17

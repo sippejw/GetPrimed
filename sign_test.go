@@ -1,7 +1,7 @@
 package main
 
 import (
-	"RSA-CRT-Fault/rsa"
+	"GetPrimed/rsa"
 	"math/big"
 	"testing"
 )
