@@ -21,10 +21,10 @@ func main() {
 	check := publicKey.Verify(m, signature)
 	fmt.Printf("Valid signature: %v\n\n", check)
 
-	faultySignature := keys.FaultySign(m)
-	fmt.Printf("S': %v\n", faultySignature)
-	failedCheck := publicKey.Verify(m, faultySignature)
+	invalidSignature := keys.BadSign(m)
+	fmt.Printf("S': %v\n", invalidSignature)
+	failedCheck := publicKey.Verify(m, invalidSignature)
 	fmt.Printf("Valid signature: %v\n\n", failedCheck)
-	privateExponent := publicKey.DerivePrivateExponent(m, faultySignature)
-	fmt.Printf("Derived private exponent: %v\n", privateExponent)
+	derivedPrime := publicKey.DerivePrime(m, invalidSignature)
+	fmt.Printf("Derived prime: %v\n", derivedPrime)
 }

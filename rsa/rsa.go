@@ -68,8 +68,8 @@ func (keys RSA) Sign(m *big.Int) *big.Int {
 	return result
 }
 
-// FaultySign Returns a faulty signature of the provided message. Specifically for a value of dp' or dq'.
-func (keys RSA) FaultySign(m *big.Int) *big.Int {
+// BadSign Returns an invalid signature of the provided message. Specifically for a value of dp' or dq'.
+func (keys RSA) BadSign(m *big.Int) *big.Int {
 	// Introduce an error to dp ultimately creating S'
 	// GoLang pointers are hard to play with, so we just add 1.
 	faultyDP := keys.dp
@@ -87,8 +87,8 @@ func (keys RSA) FaultySign(m *big.Int) *big.Int {
 	return result
 }
 
-// DerivePrivateExponent Returns the calculated exponent from the provided message and faulty signature.
-func (key PublicKey) DerivePrivateExponent(m, s *big.Int) *big.Int {
+// DerivePrime Returns the calculated prime from the provided message and invalid signature.
+func (key PublicKey) DerivePrime(m, s *big.Int) *big.Int {
 	result := new(big.Int).Exp(s, key.e, nil)
 	hashedM := hashM(m)
 	result.Sub(hashedM, result)
