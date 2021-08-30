@@ -1,7 +1,12 @@
 package rsa
 
 import (
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/sha256"
+	"fmt"
 	"math/big"
+	"os"
 )
 
 type RSA struct {
@@ -15,6 +20,11 @@ type RSA struct {
 	iq *big.Int
 }
 
+type Primes struct {
+	P *big.Int
+	Q *big.Int
+}
+
 type PublicKey struct {
 	e *big.Int
 	n *big.Int
@@ -26,25 +36,30 @@ type PrivateKey struct {
 }
 
 // Generate Create an RSA struct given precomputed values for p, q, n, e, and d.
-func Generate(p, q, n, e, d *big.Int) RSA {
+func Generate() RSA {
 	// Calculate and store values to be used in signature
 	// A common optimization that increases setup time but reduces time to sign a message.
 	// Storing these values on the disk opens the possibility to a potential error in dp or dq.
-	dp := new(big.Int).ModInverse(e, new(big.Int).Sub(p, big.NewInt(1)))
-	dq := new(big.Int).ModInverse(e, new(big.Int).Sub(q, big.NewInt(1)))
-	iq := new(big.Int).ModInverse(q, p)
-	return RSA{p: p, q: q, n: n, e: e, d: d, dp: dp, dq: dq, iq: iq}
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		fmt.Printf("Cannot generate RSA key\n")
+		os.Exit(1)
+	}
+	return RSA{p: key.Primes[0], q: key.Primes[1], n: key.N, e: big.NewInt(int64(key.E)), d: key.D, dp: key.Precomputed.Dp, dq: key.Precomputed.Dq, iq: key.Precomputed.Qinv}
 }
 
 // Verify Returns the expected value for the message to be verified.
-func (key PublicKey) Verify(s *big.Int) *big.Int {
-	return new(big.Int).Exp(s, key.e, key.n)
+func (key PublicKey) Verify(m, s *big.Int) bool {
+	hashedM := hashM(m)
+	result := new(big.Int).Exp(s, key.e, key.n)
+	return result.Cmp(hashedM) == 0
 }
 
 // Sign Returns the signed value of the provided message.
 func (keys RSA) Sign(m *big.Int) *big.Int {
-	sp := new(big.Int).Exp(m, keys.dp, keys.p)
-	sq := new(big.Int).Exp(m, keys.dq, keys.q)
+	hashedM := hashM(m)
+	sp := new(big.Int).Exp(hashedM, keys.dp, keys.p)
+	sq := new(big.Int).Exp(hashedM, keys.dq, keys.q)
 	result := new(big.Int).Sub(sp, sq)
 	result.Mul(keys.iq, result)
 	result.Mod(result, keys.p)
@@ -61,8 +76,9 @@ func (keys RSA) FaultySign(m *big.Int) *big.Int {
 	faultyDP.Add(faultyDP, big.NewInt(1))
 
 	// Everything else is calculated like normal except the introduction of dp'.
-	sp := new(big.Int).Exp(m, faultyDP, keys.p)
-	sq := new(big.Int).Exp(m, keys.dq, keys.q)
+	hashedM := hashM(m)
+	sp := new(big.Int).Exp(hashedM, faultyDP, keys.p)
+	sq := new(big.Int).Exp(hashedM, keys.dq, keys.q)
 	result := new(big.Int).Sub(sp, sq)
 	result.Mul(keys.iq, result)
 	result.Mod(result, keys.p)
@@ -74,7 +90,8 @@ func (keys RSA) FaultySign(m *big.Int) *big.Int {
 // DerivePrivateExponent Returns the calculated exponent from the provided message and faulty signature.
 func (key PublicKey) DerivePrivateExponent(m, s *big.Int) *big.Int {
 	result := new(big.Int).Exp(s, key.e, nil)
-	result.Sub(m, result)
+	hashedM := hashM(m)
+	result.Sub(hashedM, result)
 	result.Mod(result, key.n)
 	result.GCD(nil, nil, result, key.n)
 	return result
@@ -88,4 +105,20 @@ func (keys RSA) GetPublicKey() PublicKey {
 // GetPrivateKey Returns a PrivateKey generated from the values of an RSA struct.
 func (keys RSA) GetPrivateKey() PrivateKey {
 	return PrivateKey{d: keys.d, n: keys.n}
+}
+
+// GetPrimes Returns a Primes struct generated from the p and q values of an RSA struct.
+func (keys RSA) GetPrimes() Primes {
+	return Primes{P: keys.p, Q: keys.q}
+}
+
+// hashM Returns a sha256 hashed big.Int of the given message.
+func hashM(m *big.Int) *big.Int {
+	hashedM := sha256.New()
+	_, err := hashedM.Write(m.Bytes())
+	if err != nil {
+		fmt.Printf("Cannot hash message\n")
+		os.Exit(1)
+	}
+	return new(big.Int).SetBytes(hashedM.Sum(nil))
 }
