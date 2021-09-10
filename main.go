@@ -1,12 +1,20 @@
 package main
 
 import (
+	"GetPrimed/client"
 	"GetPrimed/rsa"
+	"GetPrimed/server"
 	"fmt"
 	"math/big"
 )
 
 func main() {
+	serverStatus := make(chan int)
+	go server.Server(serverStatus)
+	client.Client(serverStatus)
+}
+
+func testKeys() {
 	keys := rsa.Generate()
 	publicKey := keys.GetPublicKey()
 	primes := keys.GetPrimes()
