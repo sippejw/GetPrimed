@@ -38,7 +38,7 @@ func generateKeyAndCert() {
 		},
 		DNSNames:              []string{"localhost"},
 		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(time.Hour),
+		NotAfter:              time.Now().Add(time.Hour * 24 * 30),
 		KeyUsage:              x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 		BasicConstraintsValid: true,
@@ -79,8 +79,7 @@ func generateKeyAndCert() {
 // Create HTTPS server using TLS 1.2
 // Adapted from: https://eli.thegreenplace.net/2021/go-https-servers-with-tls/
 func Server(serverStatus chan int) {
-
-	addr := flag.String("addr", "localhost:4000", "HTTPS network address")
+	addr := flag.String("addr", "localhost:443", "HTTPS network address")
 	certFile := flag.String("certfile", "cert.pem", "certificate PEM file")
 	keyFile := flag.String("keyfile", "key.pem", "key PEM file")
 	flag.Parse()

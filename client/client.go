@@ -13,7 +13,7 @@ import (
 func Client(serverStatus chan int) {
 	for serverReady := <-serverStatus; serverReady == 0; {
 	}
-	servAddr := flag.String("servAddr", "localhost:4000", "HTTPS server address")
+	servAddr := flag.String("servAddr", "localhost:443", "HTTPS server address")
 	certFile := flag.String("certFile", "cert.pem", "CA certificated")
 	flag.Parse()
 
