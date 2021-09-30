@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/http"
 	"os"
@@ -55,7 +56,7 @@ func generateKeyAndCert() {
 		fmt.Println("Failed to encode certificate")
 		os.Exit(1)
 	}
-	if err := os.WriteFile("cert.pem", pemCert, 0644); err != nil {
+	if err := ioutil.WriteFile("cert.pem", pemCert, 0644); err != nil {
 		fmt.Printf("Failed to write certificate to file: %v", err)
 		os.Exit(1)
 	}
@@ -70,7 +71,7 @@ func generateKeyAndCert() {
 	if pemKey == nil {
 		fmt.Println("Failed to encode key")
 	}
-	if err := os.WriteFile("key.pem", pemKey, 0600); err != nil {
+	if err := ioutil.WriteFile("key.pem", pemKey, 0600); err != nil {
 		fmt.Printf("Failed to write key to file: %v", err)
 	}
 	fmt.Println("Created key.pem")
@@ -80,8 +81,8 @@ func generateKeyAndCert() {
 // Adapted from: https://eli.thegreenplace.net/2021/go-https-servers-with-tls/
 func Server(serverStatus chan int) {
 	addr := flag.String("addr", "localhost:443", "HTTPS network address")
-	certFile := flag.String("certfile", "cert.pem", "certificate PEM file")
-	keyFile := flag.String("keyfile", "key.pem", "key PEM file")
+	certFile := flag.String("certfile", "certs/cert.pem", "certificate PEM file")
+	keyFile := flag.String("keyfile", "certs/key.pem", "key PEM file")
 	flag.Parse()
 
 	mux := http.NewServeMux()

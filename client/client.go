@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"flag"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -14,10 +14,10 @@ func Client(serverStatus chan int) {
 	for serverReady := <-serverStatus; serverReady == 0; {
 	}
 	servAddr := flag.String("servAddr", "localhost:443", "HTTPS server address")
-	certFile := flag.String("certFile", "cert.pem", "CA certificated")
+	certFile := flag.String("certFile", "certs/cert.pem", "CA certificated")
 	flag.Parse()
 
-	cert, err := os.ReadFile(*certFile)
+	cert, err := ioutil.ReadFile(*certFile)
 	if err != nil {
 		fmt.Printf("Error reading certificate from file: %v", err)
 		os.Exit(1)
@@ -43,7 +43,7 @@ func Client(serverStatus chan int) {
 	}
 	defer r.Body.Close()
 
-	html, err := io.ReadAll(r.Body)
+	html, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Printf("Error reading HTML: %v", err)
 		os.Exit(1)
